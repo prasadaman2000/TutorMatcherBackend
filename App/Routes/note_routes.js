@@ -2,16 +2,6 @@ var ObjectId = require('mongodb').ObjectId;
 const fs = require('fs');
 var nodemailer = require('nodemailer');
 
-//var restaurant;
-var stream = fs.createWriteStream('./log.txt', {
-    flags: 'a'
-});
-
-function consoleLog(text) {
-    console.log(text);
-    stream.write("\n" + text);
-}
-
 module.exports = function(app, db) {
     app.post('/', (req, res) => {
         var body = req.body;
@@ -160,7 +150,8 @@ module.exports = function(app, db) {
                     pic: body.pic,
                     type: "tutee",
                     requests: [],
-                    matches: []
+                    matches: [],
+                    declined: []
                 }
 
                 db.collection("tutees").insert(newTutor, (err, result) => {
@@ -183,22 +174,29 @@ module.exports = function(app, db) {
             }
 
             else if(body.todo == "findByKeyword"){
-                db.collection("tutors").find({}).toArray((err, result) => {
+                db.collection("tutees").find({user: body.user}, (err, item) => {
                     if(err){
-                        console.log("error in finding all tutors");
-                        res.send({message: "error", result: null});
+                        console.log(err);
+                        res.send(err);
                     } else {
-                        var retArr = [];
-                        for(var i in result){
-                            for(var j in result[i].subjects){
-                                if(result[i].subjects[j] == body.keyword){
-                                    retArr.push(result[i]);
+                        db.collection("tutors").find({}).toArray((err, result) => {
+                        if(err){
+                            console.log("error in finding all tutors");
+                            res.send({message: "error", result: null});
+                        } else {
+                            var retArr = [];
+                            for(var i in result){
+                                for(var j in result[i].subjects){
+                                    if(result[i].subjects[j] == body.keyword){
+                                        retArr.push(result[i]);
+                                    }
                                 }
                             }
+                            res.send({message: "success", result: retArr});
+                            return;
                         }
-                        res.send({message: "success", result: retArr});
-                        return;
-                    }
+                    })
+                }
                 })
                 return;
             }
@@ -288,9 +286,22 @@ module.exports = function(app, db) {
                 })
                 return;
             }
+
+            else if(todo == "decline"){
+                db.collection("tutees").findOne({user: body.user}, (err, item) =>{
+                    if(err){
+                        console.log("could not find that user");
+                        res.send(err);
+                    } else {
+                        item.declined.push(body.tutor);
+                        res.send({message: "success", result: ''});
+                    }
+                })
+                return;
+            }
         }
 
-        res.send("you called the API!");
+        res.send({message:"failure", result: null});
     });
 
         
