@@ -11,7 +11,7 @@ app.use(cors({origin: '*'}));
 
 const port = 8080;
 
-MongoClient.connect(db.url, (err, database) => {
+MongoClient.connect(db.url, {autoIndex: false}, (err, database) => {
 	if (err) return console.log(err);
 
 	db = database.db("tutormatcher");
